@@ -1,17 +1,12 @@
 package com.feimao.leecode;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.Stack;
+import groovy.util.IFileNameFinder;
+import groovy.util.Node;
+
+import javax.swing.plaf.IconUIResource;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @Author: feimao
@@ -20,7 +15,7 @@ import java.util.Stack;
 public class Solution {
 
     public static void main(String[] args) {
-        new Solution().sulotion76("ADOBECODEBANC", "ABC");
+        new Solution().solution301(")()(");
     }
 
     public boolean solution10(String s, String p) {
@@ -791,7 +786,7 @@ public class Solution {
         return max;
     }
 
-    public class TreeNode {
+    public static class TreeNode {
 
         int val;
         TreeNode left;
@@ -1315,5 +1310,260 @@ public class Solution {
             }
         }
         return dp[nums.length - 1];
+    }
+
+    public int[] solution239(int[] nums, int k) {
+        Deque<Integer> queue = new LinkedList<>();
+        int[] res = new int[nums.length - k + 1];
+        for (int i = 0, j = 0; i < res.length; i++) {
+            while (!queue.isEmpty() && queue.getFirst() < i) {
+                queue.pollFirst();
+            }
+            while (j < i + k) {
+                while (!queue.isEmpty() && nums[queue.getLast()] < nums[j]) {
+                    queue.pollLast();
+                }
+                queue.offerLast(j);
+                j++;
+            }
+            res[i] = nums[queue.getFirst()];
+        }
+        return res;
+    }
+
+    public class Codec {
+
+        // Encodes a tree to a single string.
+        public String serialize(TreeNode root) {
+            if (root == null) {
+                return "null";
+            }
+            Deque<TreeNode> deque = new LinkedList<>();
+            deque.offerLast(root);
+            List<String> list = new LinkedList<>();
+            list.add(String.valueOf(root.val));
+            while (!deque.isEmpty()) {
+                TreeNode node = deque.pollFirst();
+                if (node.left != null) {
+                    deque.offerLast(node.left);
+                    list.add(String.valueOf(node.left.val));
+                } else {
+                    list.add("null");
+                }
+                if (node.right != null) {
+                    deque.offerLast(node.right);
+                    list.add(String.valueOf(node.right.val));
+                } else {
+                    list.add("null");
+                }
+            }
+            StringBuilder sb = new StringBuilder();
+            int size = list.size();
+            while (list.get(size - 1).equals("null")) {
+                size--;
+            }
+            for (int i = 0; i < size; i++) {
+                sb.append(list.get(i));
+                if (i != size - 1) {
+                    sb.append(",");
+                }
+            }
+            return sb.toString();
+        }
+
+        // Decodes your encoded data to tree.
+        public TreeNode deserialize(String data) {
+            if (data.equals("null")) {
+                return null;
+            }
+            List<String> list = Arrays.asList(data.split(","));
+            Deque<TreeNode> deque = new LinkedList();
+            TreeNode root = new TreeNode(Integer.parseInt(list.get(0)));
+            deque.offerLast(root);
+            int i = 1;
+            while (!deque.isEmpty()) {
+                TreeNode parent = deque.pollFirst();
+                String leftVal = i >= list.size() ? "null" : list.get(i);
+                String rightVal = i + 1 >= list.size() ? "null" : list.get(i + 1);
+                if (!leftVal.equals("null")) {
+                    parent.left = new TreeNode(Integer.parseInt(leftVal));
+                    deque.offerLast(parent.left);
+                }
+                if (!rightVal.equals("null")) {
+                    parent.right = new TreeNode(Integer.parseInt(rightVal));
+                    deque.offerLast(parent.right);
+                }
+                i += 2;
+            }
+            return root;
+        }
+    }
+
+    public List<String> solution301(String s) {
+        int left = 0, leftStart = -1, rightEnd = -1, right = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if (ch == '(') {
+                if (leftStart == -1) {
+                    rightEnd = i;
+                }
+                if (left == 0) {
+                    leftStart = i;
+                }
+                left++;
+            } else if (ch == ')') {
+                if (left > 0) {
+                    left--;
+                } else {
+                    right++;
+                }
+            }
+        }
+        Set<String> res = new HashSet<>();
+        dfsCollect(s, 0, left, right, leftStart, rightEnd, new StringBuilder(), res);
+        return new ArrayList<>(res);
+    }
+
+    private void dfsCollect(String s, int idx, int left, int right, int leftStart, int rightEnd, StringBuilder sb, Set<String> res) {
+        if (idx >= s.length()) {
+            if (left == 0 && right == 0) {
+                res.add(sb.toString());
+            }
+            return;
+        }
+
+        if (leftStart >= 0 && idx >= leftStart && right > 0) {
+            return;
+        }
+
+        char ch = s.charAt(idx);
+
+        if ((rightEnd < 0 || idx < rightEnd) && ch == ')') {
+            dfsCollect(s, idx + 1, left, right - 1, leftStart, rightEnd, sb, res);
+            return;
+        }
+
+        if ((leftStart < 0 || idx < leftStart) && ch == ')' && right > 0) {
+            dfsCollect(s, idx + 1, left, right - 1, leftStart, rightEnd, sb, res);
+        } else if (idx >= leftStart && ch == '(' && left > 0) {
+            dfsCollect(s, idx + 1, left - 1, right, leftStart, rightEnd, sb, res);
+        }
+
+        sb.append(ch);
+        dfsCollect(s, idx + 1, left, right, leftStart, rightEnd, sb, res);
+        sb.deleteCharAt(sb.length() - 1);
+    }
+
+    public int solution312(int[] nums) {
+        int n = nums.length + 2;
+        int[][] maxCoins = new int[n][n];
+        int[] vals = new int[n];
+        vals[0] = vals[n - 1] = 1;
+        for (int i = 0; i < nums.length; i++) {
+            vals[i + 1] = nums[i];
+        }
+        for (int i = n - 1; i >= 0; i--) {
+            for (int j = i + 2; j < n; j++) {
+                for (int k = i + 1; k < j; k++) {
+                    int sum = vals[k] * vals[i] * vals[j];
+                    sum += maxCoins[i][k];
+                    sum += maxCoins[k][j];
+                    maxCoins[i][j] = Math.max(sum, maxCoins[i][j]);
+                }
+            }
+        }
+        return maxCoins[0][maxCoins.length - 1];
+    }
+
+    class LFUCache {
+
+        private int minFre;
+
+        private int capacity;
+
+        private Map<Integer, LFUNode> cache;
+
+        private Map<Integer, LFUNode> freMap;
+
+        class LFUNode {
+            int key;
+            int value;
+            int fre;
+            LFUNode prev;
+            LFUNode next;
+        }
+
+        public LFUCache(int capacity) {
+            this.minFre = 0;
+            this.capacity = capacity;
+            this.cache = new HashMap<>();
+            this.freMap = new HashMap<>();
+        }
+
+        public int get(int key) {
+            LFUNode node = cache.get(key);
+            if (node == null) {
+                return -1;
+            }
+            addFre(node);
+            return node.value;
+        }
+
+        private void addFre(LFUNode node) {
+            if (node.prev == null) {
+                freMap.put(node.fre, node.next);
+            } else {
+                node.prev.next = node.next;
+            }
+            if (node.next != null) {
+                node.next.prev = node.prev;
+            }
+            if (minFre == node.fre && freMap.get(node.fre) == null) {
+                minFre++;
+            }
+            node.fre++;
+            node.next = freMap.get(node.fre);
+            node.prev = null;
+            if (node.next != null) {
+                node.next.prev = node;
+            }
+            freMap.put(node.fre, node);
+        }
+
+        public void put(int key, int value) {
+            if (capacity == 0) {
+                return;
+            }
+            LFUNode node = cache.get(key);
+            if (node != null) {
+                node.value = value;
+                addFre(node);
+                return;
+            }
+            node = new LFUNode();
+            node.key = key;
+            node.value = value;
+            node.fre = 1;
+            cache.put(key, node);
+            if (cache.size() > capacity) {
+                //驱逐
+                LFUNode exict = freMap.get(minFre);
+                while (exict.next != null) {
+                    exict = exict.next;
+                }
+                cache.remove(exict.key);
+                if (exict.prev == null) {
+                    freMap.remove(minFre);
+                } else {
+                    exict.prev.next = null;
+                }
+            }
+            minFre = 1;
+            node.next = freMap.get(minFre);
+            if (node.next != null) {
+                node.next.prev = node;
+            }
+            freMap.put(minFre, node);
+        }
     }
 }
